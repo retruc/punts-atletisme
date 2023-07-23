@@ -1,0 +1,57 @@
+import pulp
+
+atletas = ['Tomeu', 'Marc', 'Damia', 'Gabriel', 'Juanjo', 'Tomas', 'Joan', 'Rafel', 'Pere', 'Perej', 'PereP']
+pruebas = [
+    '100', '200', '400', '800', '1500','5000',
+     '110 mv', '400 mv', '3000 obst.',
+    '5 km marxa',
+     'llargada', 'triple_salt', 'alçada', 'perxa',
+     'pes', 'disc', 'javelina', 'martell'
+]
+
+puntuaciones = {
+    'Tomeu': {'100': 625, 'llargada': 756},
+    'Marc': {'200': 489},
+    'Damia': {'400': 542, '1500': 768, '800': 763, '5000': 743},
+    'Gabriel': {'800': 629, '3000 obst.': 0, '5000': 563,'triple_salt': 490 ,'400 mv': 412, '200': 489},
+    'Juanjo': {'110 mv': 512, 'perxa': 510, 'javelina': 391, 'alçada': 561},
+    'Tomas': {'400 mv': 288, 'triple_salt': 724},
+    'Joan': {'5 km marxa': 659},
+    'Rafel': {'alçada': 363},
+    'Pere': {'pes': 506, 'disc': 536 },
+    'Perej': {'jabalina': 379, 'martell': 398},
+    'PereP': {'400': 217}
+}
+
+# Crea el problema de optimización
+prob = pulp.LpProblem("Optimizacion_de_puntuacion", pulp.LpMaximize)
+
+# Crea las variables de decisión
+x = pulp.LpVariable.dicts("Asignacion", (atletas, pruebas), cat='Binary')
+
+# Función objetivo: maximizar la puntuación total
+prob += pulp.lpSum([puntuaciones[atleta].get(prueba, 0) * x[atleta][prueba] for atleta in atletas for prueba in pruebas])
+
+# Restricción: cada prueba debe ser realizada por un solo atleta
+for prueba in pruebas:
+    prob += pulp.lpSum([x[atleta][prueba] for atleta in atletas]) == 1
+
+# Restricción: cada atleta puede hacer como máximo dos pruebas
+for atleta in atletas:
+    prob += pulp.lpSum([x[atleta][prueba] for prueba in pruebas]) <= 2
+
+# Resuelve el problema
+status = prob.solve()
+
+# Muestra la asignación óptima
+if pulp.LpStatus[status] == 'Optimal':
+    print("Asignació òptima:")
+    total_puntos = 0
+    for atleta in atletas:
+        for prueba in pruebas:
+            if x[atleta][prueba].value() == 1:
+                print(f"{atleta} -----> {prueba},  -----> {puntuaciones[atleta].get(prueba, 0)} punts")
+                total_puntos += puntuaciones[atleta].get(prueba, 0)
+    print(f"La suma total de punts és: {total_puntos}")            
+else:
+    print("No se encontró una solución óptima")
